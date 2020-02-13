@@ -20,6 +20,13 @@ def draw(_map, _canvas):
                     _canvas[i * 5 + k][j * 5 + l] = color[int(_map[i][j])]
 
 
+def draw_path(_path, _canvas):
+    for i in range(len(_path)):
+        for j in range(5):  # 5 is unit of single block
+            for k in range(5):
+                _canvas[path[i][0] * 5 + j][path[i][1] * 5 + k] = (255, 0, 0)
+
+
 def show(_map):
     canvas = init_canvas(len(_map), len(_map[0]))
     draw(_map, canvas)
@@ -27,8 +34,17 @@ def show(_map):
     cv.waitKey(0)
 
 
+def show(_map, _path):
+    canvas = init_canvas(len(_map), len(_map[0]))
+    draw(_map, canvas)
+    draw_path(_path, canvas)
+    cv.imshow('map', canvas)
+    cv.waitKey(0)
+
+
 if __name__ == '__main__':
     map = np.zeros(shape=(100, 100))
+    path = [(10, 10), (10, 11), (10, 12), (11, 12)]
 
     # boundary
     map[0, :] = -1
@@ -37,6 +53,5 @@ if __name__ == '__main__':
     map[:, 99] = -1
     map[30:70, 30:70] = -1
 
-    show(map)
-
+    show(map, path)
 
