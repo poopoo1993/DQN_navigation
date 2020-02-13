@@ -15,6 +15,9 @@ Phase two : assign start and end point randomly
 
 ###Two. Map setting
  0 => road\
+ 1 => start point\
+ 2 => end point\
 -1 => wall
+
 
 

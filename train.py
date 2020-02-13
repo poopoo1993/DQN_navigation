@@ -8,7 +8,6 @@ show(map)
 
 # create DQN
 
-
 # training
 
 # save DQN
