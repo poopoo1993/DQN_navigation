@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 
@@ -8,28 +9,54 @@ class LSTM(nn.Module):
     def __init__(self):
         super(LSTM, self).__init__()
         # model
-        self.conv1 = nn.Conv1d(in_channels=1, out_channels=4, kernel_size=3,
+        # convolution layer #1
+
+        # Q-Networks
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=2, kernel_size=3,
                                stride=1, padding=1)
         self.maxpooling1 = nn.MaxPool1d(kernel_size=3, stride=1)
-        self.conv2 = nn.Conv1d(in_channels=4, out_channels=2, kernel_size=3,
+
+        # convolution layer #2
+        self.conv2 = nn.Conv1d(in_channels=2, out_channels=4, kernel_size=3,
                                stride=1, padding=1)
         self.maxpooling2 = nn.MaxPool1d(kernel_size=3, stride=1)
+
+        # convolution layer #3
+        self.conv3 = nn.Conv1d(in_channels=4, out_channels=8, kernel_size=3,
+                               stride=1, padding=1)
+        self.maxpooling3 = nn.MaxPool1d(kernel_size=3, stride=1)
+
         self.flatten = nn.Flatten()
+
+        # fully connection layer
+        self.fc_layer1 = nn.Linear(40, 20)
+        self.fc_layer2 = nn.Linear(20, 16)
+
+        # LSTM cell
         self.cx = torch.zeros(1, 8)
         self.hx = torch.zeros(1, 8)
-        self.lstm_cell = nn.LSTMCell(input_size=14, hidden_size=8)
+        self.lstm_cell = nn.LSTMCell(input_size=16, hidden_size=8)
 
     def forward(self, env_info):
+        # data type converting and data pre-processing
         q_table = np.append(env_info, env_info[:3])
         q_table = torch.Tensor(q_table)
         q_table = torch.unsqueeze(q_table, 0)
         q_table = torch.unsqueeze(q_table, 0)
-        q_table = self.conv1(q_table)
-        q_table = self.maxpooling1(q_table)
-        q_table = self.conv2(q_table)
-        q_table = self.maxpooling2(q_table)
+
+        # convolution
+        q_table = self.maxpooling1(self.conv1(q_table))
+        q_table = F.relu(self.maxpooling2(self.conv2(q_table)))
+        q_table = F.relu(self.maxpooling3(self.conv3(q_table)))
         q_table = self.flatten(q_table)
+
+        # fully connection layer
+        q_table = F.relu(self.fc_layer1(q_table))
+        q_table = F.relu(self.fc_layer2(q_table))
+
+        # lstm
         self.hx, self.cx = self.lstm_cell(q_table, (self.hx, self.cx))
+        q_table = self.hx
         '''
         print state of LSTM cell
         print('hx= ', end='')
@@ -37,8 +64,6 @@ class LSTM(nn.Module):
         print('cx= ', end='')
         print(self.cx)
         '''
-        q_table = self.hx
-
         return q_table
 
 

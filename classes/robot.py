@@ -1,64 +1,82 @@
 import numpy as np
+import torch
+from classes.DQN import LSTM
 
 
 class Robot:
 
-    def __init__(self, _start_point=(0, 0), _path=list()):
+    def __init__(self, _start_point=(10, 10), _end_point=(90, 90), _path=list()):
+
+        # parameter of robot
         self.start_point = _start_point
-        self.point = _start_point
+        self.end_point = _end_point
+        self.position = _start_point
         self.path = _path
         self.length_path = 0
-        self.path.append(self.point)
+        self.path.append(self.position)
+
+        # parameter of neural networks
+        self.core = LSTM()
+        self.target_network = LSTM()
+        self.experience = list()
+        self.q_table_record = list()
 
     def reset(self):
-        self.point = self.start_point
+
+        # reset robot state
+        self.position = self.start_point
         self.path = list()
-        self.path.append(self.point)
+        self.path.append(self.position)
         self.length_path = 0
+
+        # reset memory
+        self.experience = list()
+        self.q_table_record = list()
 
     def walk(self, direction):
         if direction == 0:    # walk to top
-            self.point = (self.point[0], self.point[1] - 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0], self.position[1] - 1)
+            self.path.append(tuple(self.position))
             self.length_path += 1
 
         elif direction == 1:  # walk to top_right
-            self.point = (self.point[0] + 1, self.point[1] - 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] + 1, self.position[1] - 1)
+            self.path.append(tuple(self.position))
             self.length_path += pow(2, 1/2)
 
         elif direction == 2:  # walk to right
-            self.point = (self.point[0] + 1, self.point[1])
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] + 1, self.position[1])
+            self.path.append(tuple(self.position))
             self.length_path += 1
 
         elif direction == 3:  # walk to right_down
-            self.point = (self.point[0] + 1, self.point[1] + 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] + 1, self.position[1] + 1)
+            self.path.append(tuple(self.position))
             self.length_path += pow(2, 1/2)
 
         elif direction == 4:  # walk to down
-            self.point = (self.point[0], self.point[1] + 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0], self.position[1] + 1)
+            self.path.append(tuple(self.position))
             self.length_path += 1
 
         elif direction == 5:  # walk to left_down
-            self.point = (self.point[0] - 1, self.point[1] + 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] - 1, self.position[1] + 1)
+            self.path.append(tuple(self.position))
             self.length_path += pow(2, 1/2)
 
         elif direction == 6:  # walk to left
-            self.point = (self.point[0] - 1, self.point[1])
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] - 1, self.position[1])
+            self.path.append(tuple(self.position))
             self.length_path += 1
 
         elif direction == 7:  # walk to top_left
-            self.point = (self.point[0] - 1, self.point[1] - 1)
-            self.path.append(tuple(self.point))
+            self.position = (self.position[0] - 1, self.position[1] - 1)
+            self.path.append(tuple(self.position))
             self.length_path += pow(2, 1/2)
 
+    # return range normalized in (0~1)
     def range_finder(self, _map):
-        _point = self.point
+        _point = self.position
         top, top_right, right, right_down = 0, 0, 0, 0
         down, left_down, left, top_left = 0, 0, 0, 0
 
@@ -71,7 +89,7 @@ class Robot:
                 top += 1
 
         # find range of top right
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] + 1, _point[1] - 1)
             if _map[_point] == -1:
@@ -80,7 +98,7 @@ class Robot:
                 top_right += 1
 
         # find range of right
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] + 1, _point[1])
             if _map[_point] == -1:
@@ -89,7 +107,7 @@ class Robot:
                 right += 1
 
         # find range fo right down
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] + 1, _point[1] + 1)
             if _map[_point] == -1:
@@ -98,7 +116,7 @@ class Robot:
                 right_down += 1
 
         # find range fo down
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0], _point[1] + 1)
             if _map[_point] == -1:
@@ -107,7 +125,7 @@ class Robot:
                 down += 1
 
         # find range fo left down
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] - 1, _point[1] + 1)
             if _map[_point] == -1:
@@ -116,7 +134,7 @@ class Robot:
                 left_down += 1
 
         # find range of left
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] - 1, _point[1])
             if _map[_point] == -1:
@@ -125,7 +143,7 @@ class Robot:
                 left += 1
 
         # find range fo top left
-        _point = self.point
+        _point = self.position
         while True:
             _point = (_point[0] - 1, _point[1] - 1)
             if _map[_point] == -1:
@@ -135,6 +153,8 @@ class Robot:
 
         _range = [top, top_right * pow(2, 1/2), right, right_down * pow(2, 1/2), down, left_down * pow(2, 1/2),
                   left, top_left * pow(2, 1/2)]
+        # _range = [i * 0.01 for i in _range]
+
         return _range
 
 
@@ -149,7 +169,7 @@ if __name__ == '__main__':
     print("the path robot walked: ")
     print(bot.path)
     print("the length of path: " + str(bot.length_path))
-    print("bot is at " + str(bot.point) + " now")
+    print("bot is at " + str(bot.position) + " now")
     map = np.zeros(shape=(100, 100))
     # boundary
     map[0, :] = -1

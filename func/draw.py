@@ -24,22 +24,24 @@ def draw_path(_path, _canvas):
     for i in range(len(_path)):
         for j in range(5):  # 5 is unit of single block
             for k in range(5):
-                _canvas[path[i][0] * 5 + j][path[i][1] * 5 + k] = (255, 0, 0)
+                _canvas[_path[i][0] * 5 + j][_path[i][1] * 5 + k] = (255, 0, 0)
 
-
+'''
 def show(_map):
     canvas = init_canvas(len(_map), len(_map[0]))
     draw(_map, canvas)
     cv.imshow('map', canvas)
     cv.waitKey(0)
+'''
 
 
-def show(_map, _path):
+def show(_map, _path=[]):
     canvas = init_canvas(len(_map), len(_map[0]))
     draw(_map, canvas)
-    draw_path(_path, canvas)
+    if not _path == []:
+        draw_path(_path, canvas)
     cv.imshow('map', canvas)
-    cv.waitKey(0)
+    cv.waitKey(1)
 
 
 if __name__ == '__main__':
